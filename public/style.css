@@ -252,7 +252,7 @@ button, .toggle-btn, .delete-btn, .resolve-btn {
 }
 
 .resolve-btn {
-    background-color: #007bff;
+    background-color: #005bbc;
     color: white;
     border: none;
     padding: 8px 12px;
@@ -260,9 +260,9 @@ button, .toggle-btn, .delete-btn, .resolve-btn {
 }
 
 .resolve-btn:hover {
-    background-color: #095db0;
+    background-color: #0080ff;
     filter: brightness(1.1);
-    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+    box-shadow: 0 4px 10px rgba(1, 124, 255, 0.47);
 }
 
 .delete-btn:hover {
