@@ -15,7 +15,6 @@ document.addEventListener('DOMContentLoaded', () => {
 const renderItems = (items) => {
     itemsContainer.innerHTML = '';
     
-    // Safety check for array (helps with the 500 error handling marks)
     if (!Array.isArray(items)) return;
 
     items.forEach(item => {
