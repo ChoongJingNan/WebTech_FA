@@ -12,13 +12,13 @@ app.get('/api/items', async (req, res) => {
         const [rows] = await db.query('SELECT * FROM items ORDER BY created_at DESC');
         res.json(rows);
     } catch (err) {
-        res.status(500).json({ error: "Server Error" });
+        res.status(500).json({ error: "Server Error!" });
     }
 });
 
 app.post('/api/items', async (req, res) => {
     const { title, description, category, location, item_date, contact_info } = req.body;
-
+    
     if (!title || !description || !contact_info) {
         return res.status(400).json({ error: "Required fields missing" });
     }
@@ -28,7 +28,11 @@ app.post('/api/items', async (req, res) => {
         await db.query(query, [title, description, category, location, item_date, contact_info]);
         res.status(201).json({ message: "Report submitted successfully" });
     } catch (err) {
-        res.status(500).json({ error: "Database error" });
+    console.error("DATABASE ERROR:", err);
+    res.status(500).json({ 
+        error: "Database Insert Failed", 
+        details: err.message
+    });
     }
 });
 
