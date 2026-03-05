@@ -50,6 +50,56 @@ button {
     margin-top: 5px;
 }
 
+/* The Red Star */
+.required {
+    color: #dc3545;
+    margin-left: 2px;
+    font-weight: bold;
+}
+
+/* Hide the actual radio circles */
+.category-toggle input[type="radio"] {
+    display: none;
+}
+
+/* Container for the buttons */
+.category-toggle {
+    display: flex;
+    gap: 10px;
+    margin: 10px 0;
+}
+
+/* The button styling */
+.toggle-btn {
+    flex: 1;
+    padding: 12px;
+    text-align: center;
+    background: #e9ecef;
+    border: 2px solid #ced4da;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: all 0.3s ease;
+    color: #495057;
+}
+
+
+.toggle-btn:hover {
+    background: #dee2e6;
+}
+
+#lost:checked + .toggle-btn {
+    background: #ffc107;
+    border-color: #e0a800;
+    color: #000;
+}
+
+#found:checked + .toggle-btn {
+    background: #28a745;
+    border-color: #1e7e34;
+    color: #fff;
+}
+
 .item-card {
     background: white;
     padding: 20px;

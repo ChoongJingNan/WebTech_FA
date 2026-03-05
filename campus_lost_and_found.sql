@@ -1,7 +1,7 @@
 CREATE DATABASE IF NOT EXISTS campus_lost_and_found;
 USE campus_lost_and_found;
 
-CREATE TABLE items(
+CREATE TABLE IF NOT EXISTS items (
     id INT AUTO_INCREMENT PRIMARY KEY,
     title VARCHAR(255) NOT NULL,
     description TEXT NOT NULL,

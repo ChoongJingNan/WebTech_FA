@@ -1,7 +1,12 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const itemForm = document.getElementById('itemForm');
+    const itemForm = document.getElementById('report-form'); 
     const itemsContainer = document.getElementById('itemsContainer');
 
+    if (!itemForm) {
+        console.error("Form not found! Check your HTML IDs.");
+        return;
+    }
+    
     const fetchItems = async () => {
         try {
             const response = await fetch('/api/items');
@@ -61,35 +66,43 @@ const renderItems = (items) => {
     itemForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
+        const selectedCategory = document.querySelector('input[name="category"]:checked');
         const title = document.getElementById('title').value.trim();
         const contact = document.getElementById('contact_info').value.trim();
         if (title.length < 3) return alert("Title must be at least 3 characters.");
         if (contact.length < 5) return alert("Please provide valid contact info.");
+        if (!selectedCategory) {
+        alert("Please select Lost or Found!");
+        return;
+    }
 
-        const formData = {
-            title: title,
-            description: document.getElementById('description').value,
-            category: document.getElementById('category').value,
-            location: document.getElementById('location').value,
-            item_date: document.getElementById('item_date').value,
-            contact_info: contact
-        };
+    const formData = {
+        title: document.getElementById('title').value,
+        category: selectedCategory.value,
+        description: document.getElementById('description').value,
+        location: document.getElementById('location').value,
+        item_date: document.getElementById('item_date').value,
+        contact_info: document.getElementById('contact_info').value
+    };
 
-        try {
-            const response = await fetch('/api/items', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(formData)
-            });
+       try {
+        const response = await fetch('/api/items', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(formData)
+        });
 
-            if (response.ok) {
-                itemForm.reset();
-                fetchItems();
-            }
-        } catch (error) {
-            alert("Failed to submit report.");
+        if (response.ok) {
+            alert('Report submitted successfully!');
+            itemForm.reset();
+            fetchItems();
+        } else {
+            console.error("Server error:", response.statusText);
         }
-    });
+    } catch (err) {
+        console.error("Network error:", err);
+    }
+});
 
     window.updateStatus = async (id) => {
         try {
