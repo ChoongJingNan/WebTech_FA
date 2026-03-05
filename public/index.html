@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
     <title>QIU Lost & Found</title>
-    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="style.css">
     <script src="script.js" defer></script>
 </head>
@@ -15,43 +15,57 @@
 
     <main>
         <section id="report-section"> 
-            <h2>Submit a Report</h2>
-            
+            <h2>Submit a New Report</h2>
             <form id="report-form"> 
-                <div class="input-group">
-                    <label>Item Title <span class="required">*</span></label>
-                    <input type="text" id="title" placeholder="e.g., Wallet, Stationery" required>
-                </div>
-
-                <div class="input-group">
-                    <label>Type of Report <span class="required">*</span></label>
-                    <div class="category-toggle">
-                        <input type="radio" id="lost" name="category" value="Lost" checked>
-                        <label for="lost" class="toggle-btn">Lost</label>
-
-                        <input type="radio" id="found" name="category" value="Found">
-                        <label for="found" class="toggle-btn">Found</label>
+                <div class="form-section">
+                    <h3>Reporter Information</h3>
+                    <div class="input-group">
+                        <label>Your Name <span class="required">*</span></label>
+                        <input type="text" id="reporter_name" placeholder="e.g., Muhammad Ali" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Phone Number / Email <span class="required">*</span></label>
+                        <input type="text" id="contact_info" placeholder="How can we reach you?" required>
                     </div>
                 </div>
 
-                <div class="input-group">
-                    <label>Description <span class="required">*</span></label>
-                    <textarea id="description" placeholder="Provide details such as how the item is lost/found, and where is it now." required></textarea>
-                </div>
+                <div class="form-section">
+                    <h3>Item Details</h3>
+                    <div class="input-group">
+                        <label>Item Name <span class="required">*</span></label>
+                        <input type="text" id="title" placeholder="e.g., Headphones, Wallet" required>
+                    </div>
 
-                <div class="input-group">
-                    <label>Location <span class="required">*</span></label>
-                    <input type="text" id="location" placeholder="Where was it last seen?" required>
-                </div>
+                    <div class="input-group">
+                        <label>Type of Report <span class="required">*</span></label>
+                        <div class="category-toggle">
+                            <input type="radio" id="lost" name="category" value="Lost" checked>
+                            <label for="lost" class="toggle-btn">Lost</label>
 
-                <div class="input-group">
-                    <label>Date <span class="required">*</span></label>
-                    <input type="date" id="item_date" required>
-                </div>
+                            <input type="radio" id="found" name="category" value="Found">
+                            <label for="found" class="toggle-btn">Found</label>
+                        </div>
+                    </div>
 
-                <div class="input-group">
-                    <label>Contact Info <span class="required">*</span></label>
-                    <input type="text" id="contact_info" placeholder="Email or Phone" required>
+                    <div class="input-group">
+                        <label>Description <span class="required">*</span></label>
+                        <textarea id="description" placeholder="Provide details like colour or shape." required></textarea>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Location <span class="required">*</span></label>
+                        <input type="text" id="location" placeholder="Where was it last seen?" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Date <span class="required">*</span></label>
+                        <input type="date" id="item_date" required>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Attach Image (Optional)</label>
+                        <input type="file" id="item_image" accept="image/*">
+                    </div>
                 </div>
 
                 <button type="submit">Submit Report</button>
