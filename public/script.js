@@ -55,7 +55,7 @@ const renderItems = (items) => {
             </div>
 
             <div class="actions">
-                ${item.status === 'Active' ? `<button onclick="updateStatus(${item.id})">Mark as Resolved</button>` : ''}
+                ${item.status === 'Active' ? `<button class="resolve-btn" onclick="updateStatus(${item.id})">Mark as Resolved</button>` : ''}
                 <button class="delete-btn" onclick="deleteItem(${item.id})">Delete Report</button>
             </div>
         `;

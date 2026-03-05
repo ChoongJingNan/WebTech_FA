@@ -22,11 +22,19 @@ main, .container {
 
 #report-form {
     background: white;
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    margin: 0 auto 30px auto; 
-    max-width: 800px;
+    padding: 30px;
+    border-radius: 12px;
+    box-shadow: 0 8px 16px rgba(0,0,0,0.1);
+    margin: 20px auto 40px auto; 
+    max-width: 600px;
+    width: 90%;
+}
+
+#report-section h2 {
+    text-align: center;
+    font-family: 'Montserrat', sans-serif;
+    color: #003366;
+    margin-top: 20px;
 }
 
 input, textarea, select, button {
@@ -50,26 +58,22 @@ button {
     margin-top: 5px;
 }
 
-/* The Red Star */
 .required {
     color: #dc3545;
     margin-left: 2px;
     font-weight: bold;
 }
 
-/* Hide the actual radio circles */
 .category-toggle input[type="radio"] {
     display: none;
 }
 
-/* Container for the buttons */
 .category-toggle {
     display: flex;
     gap: 10px;
     margin: 10px 0;
 }
 
-/* The button styling */
 .toggle-btn {
     flex: 1;
     padding: 12px;
@@ -183,4 +187,35 @@ header h1 {
     #itemsContainer {
         grid-template-columns: repeat(6, 1fr);
     }
+}
+
+button, .toggle-btn, .delete-btn, .resolve-btn {
+    transition: all 0.3s ease;
+    cursor: pointer;
+}
+
+#report-form button[type="submit"]:hover {
+    background-color: #34ce57;
+    box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    transform: translateY(-2px);
+}
+
+.resolve-btn {
+    background-color: #007bff;
+    color: white;
+    border: none;
+    padding: 8px 12px;
+    border-radius: 4px;
+}
+
+.resolve-btn:hover {
+    background-color: #095db0;
+    filter: brightness(1.1);
+    box-shadow: 0 4px 10px rgba(0, 123, 255, 0.3);
+}
+
+.delete-btn:hover {
+    background-color: #e11b2f;
+    filter: brightness(1.2);
+    box-shadow: 0 4px 10px rgba(220, 53, 69, 0.3);
 }
