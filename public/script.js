@@ -62,6 +62,21 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    document.getElementById('searchInput').addEventListener('keyup', function() {
+    const filter = this.value.toLowerCase();
+    const cards = document.querySelectorAll('.item-card');
+
+    cards.forEach(card => {
+        const text = card.textContent.toLowerCase();
+        
+        if (text.includes(filter)) {
+            card.style.display = "";
+          } else {
+            card.style.display = "none";
+          }
+       });
+    }); 
+
     itemForm.addEventListener('submit', async (e) => {
         e.preventDefault();
 
@@ -85,7 +100,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const response = await fetch('/api/items', {
                 method: 'POST',
-                body: formData // CRITICAL: This sends the data to the server
+                body: formData
             });
 
             if (response.ok) {
