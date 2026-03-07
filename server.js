@@ -8,6 +8,10 @@ const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 
 const app = express();
+
+// ─── Security Middleware ───────────────────────────────────────────────────────
+
+// Helmet: sets secure HTTP headers (XSS protection, content-type sniffing, etc.)
 app.use(
     helmet({
         contentSecurityPolicy: {
@@ -16,12 +20,13 @@ app.use(
                 styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
                 fontSrc:    ["'self'", "https://fonts.gstatic.com"],
                 imgSrc:     ["'self'", "data:"],
-                scriptSrc: ["'self'", "'unsafe-inline'"],
+                scriptSrc:  ["'self'"],
             },
         },
     })
 );
 
+// Rate Limiter: max 30 requests per 10 minutes per IP (prevents spam/abuse)
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 30,
@@ -30,6 +35,7 @@ const limiter = rateLimit({
     legacyHeaders: false,
 });
 
+// Stricter limiter on POST (submissions): max 10 reports per 10 minutes
 const submitLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
     max: 10,
@@ -38,10 +44,20 @@ const submitLimiter = rateLimit({
 
 app.use(limiter);
 
+// ─── Input Sanitization Helper ────────────────────────────────────────────────
+
+// Strips HTML tags only — encoding is handled at render time by the frontend.
 const sanitize = (value) => {
     if (typeof value !== 'string') return '';
     return value.replace(/<[^>]*>/g, '').trim();
 };
+
+// ─── Admin Credentials ────────────────────────────────────────────────────────
+// Store the admin password as a SHA-256 hash — never compare plain-text passwords.
+// Hash of "admin42069"
+const ADMIN_PASSWORD_HASH = crypto.createHash('sha256').update('admin42069').digest('hex');
+
+// ─── Server-Side Validation Helper ───────────────────────────────────────────
 
 const validateReportFields = ({ reporter_name, title, description, category, location, item_date, contact_info, verification_code }) => {
     const errors = [];
@@ -85,11 +101,15 @@ const validateReportFields = ({ reporter_name, title, description, category, loc
         errors.push('Contact info must be at least 5 characters.');
     if (contact_info && contact_info.trim().length > 255)
         errors.push('Contact info must be under 255 characters.');
+
+    // Verification PIN: exactly 4 digits — used to verify ownership before resolving or deleting
     if (!verification_code || !/^\d{4}$/.test(verification_code.trim()))
         errors.push('Verification PIN must be exactly 4 digits. You will need it to resolve or delete your report.');
 
     return errors;
 };
+
+// ─── File Upload ──────────────────────────────────────────────────────────────
 
 const uploadDir = path.join(__dirname, 'public', 'uploads');
 if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
@@ -112,10 +132,15 @@ const upload = multer({
     },
 });
 
+// ─── Body Parsing & Static Files ─────────────────────────────────────────────
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.static('public'));
 
+// ─── API Routes ───────────────────────────────────────────────────────────────
+
+// GET all items — verification_code is intentionally excluded from response
 app.get('/api/items', async (req, res) => {
     try {
         const [rows] = await db.query(
@@ -128,6 +153,19 @@ app.get('/api/items', async (req, res) => {
     }
 });
 
+// POST — verify admin password
+app.post('/api/admin/login', (req, res) => {
+    const { password } = req.body;
+    if (!password) return res.status(400).json({ error: 'Password is required.' });
+    const hash = crypto.createHash('sha256').update(password).digest('hex');
+    if (hash === ADMIN_PASSWORD_HASH) {
+        res.json({ success: true, message: 'Admin access granted.' });
+    } else {
+        res.status(403).json({ error: 'Incorrect admin password.' });
+    }
+});
+
+// POST — submit a new report
 app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, res) => {
     try {
         const { reporter_name, title, description, category, location, item_date, contact_info, verification_code } = req.body;
@@ -147,6 +185,7 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
             item_date,
             contact_info:  sanitize(contact_info),
             image_path:    req.file ? `/uploads/${req.file.filename}` : null,
+            // Hash the PIN — never store plain-text secrets in the database
             verification_code: crypto.createHash('sha256').update(verification_code.trim()).digest('hex'),
         };
 
@@ -165,22 +204,32 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
     }
 });
 
+// PATCH — mark item as resolved
+// Admin (admin_password in body) can resolve without PIN; reporters need their PIN.
 app.patch('/api/items/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (isNaN(id)) return res.status(400).json({ error: 'Invalid item ID.' });
 
-        const { verification_code } = req.body;
-        if (!verification_code || !/^\d{4}$/.test(verification_code.trim()))
-            return res.status(400).json({ error: 'A valid 4-digit PIN is required to resolve this report.' });
-
         const [[item]] = await db.query('SELECT verification_code, status FROM items WHERE id = ?', [id]);
         if (!item) return res.status(404).json({ error: 'Item not found.' });
         if (item.status === 'Resolved') return res.status(400).json({ error: 'This report is already resolved.' });
 
-        const inputHash = crypto.createHash('sha256').update(verification_code.trim()).digest('hex');
-        if (inputHash !== item.verification_code)
-            return res.status(403).json({ error: 'Incorrect PIN. Only the original reporter can resolve this report.' });
+        const { admin_password, verification_code } = req.body;
+
+        if (admin_password) {
+            // Admin bypass
+            const adminHash = crypto.createHash('sha256').update(admin_password).digest('hex');
+            if (adminHash !== ADMIN_PASSWORD_HASH)
+                return res.status(403).json({ error: 'Incorrect admin password.' });
+        } else {
+            // Reporter PIN check
+            if (!verification_code || !/^\d{4}$/.test(verification_code.trim()))
+                return res.status(400).json({ error: 'A valid 4-digit PIN is required to resolve this report.' });
+            const inputHash = crypto.createHash('sha256').update(verification_code.trim()).digest('hex');
+            if (inputHash !== item.verification_code)
+                return res.status(403).json({ error: 'Incorrect PIN. Only the original reporter can resolve this report.' });
+        }
 
         await db.query('UPDATE items SET status = "Resolved" WHERE id = ?', [id]);
         res.json({ message: 'Report marked as resolved.' });
@@ -190,21 +239,40 @@ app.patch('/api/items/:id', async (req, res) => {
     }
 });
 
+// DELETE — remove a report
+// Rules:
+//   1. Admin (correct admin_password in body) → always allowed, no PIN needed
+//   2. Resolved item → no PIN needed (reporter already confirmed ownership via PATCH)
+//   3. Active item → correct 4-digit reporter PIN required
 app.delete('/api/items/:id', async (req, res) => {
     try {
         const id = parseInt(req.params.id, 10);
         if (isNaN(id)) return res.status(400).json({ error: 'Invalid item ID.' });
 
-        const { verification_code } = req.body;
-        if (!verification_code || !/^\d{4}$/.test(verification_code.trim()))
-            return res.status(400).json({ error: 'A valid 4-digit PIN is required to delete this report.' });
-
-        const [[item]] = await db.query('SELECT verification_code, image_path FROM items WHERE id = ?', [id]);
+        const [[item]] = await db.query('SELECT verification_code, image_path, status FROM items WHERE id = ?', [id]);
         if (!item) return res.status(404).json({ error: 'Item not found.' });
 
-        const inputHash = crypto.createHash('sha256').update(verification_code.trim()).digest('hex');
-        if (inputHash !== item.verification_code)
-            return res.status(403).json({ error: 'Incorrect PIN. Only the original reporter can delete this report.' });
+        const { admin_password, verification_code } = req.body;
+
+        // ── Rule 1: Admin bypass ──────────────────────────────────────────────
+        if (admin_password) {
+            const adminHash = crypto.createHash('sha256').update(admin_password).digest('hex');
+            if (adminHash !== ADMIN_PASSWORD_HASH)
+                return res.status(403).json({ error: 'Incorrect admin password.' });
+            // Admin verified — fall through to deletion
+        }
+        // ── Rule 2: Already resolved — no PIN needed ─────────────────────────
+        else if (item.status === 'Resolved') {
+            // Fall through to deletion
+        }
+        // ── Rule 3: Active — require reporter PIN ────────────────────────────
+        else {
+            if (!verification_code || !/^\d{4}$/.test(verification_code.trim()))
+                return res.status(400).json({ error: 'A valid 4-digit PIN is required to delete this report.' });
+            const inputHash = crypto.createHash('sha256').update(verification_code.trim()).digest('hex');
+            if (inputHash !== item.verification_code)
+                return res.status(403).json({ error: 'Incorrect PIN. Only the original reporter can delete this report.' });
+        }
 
         if (item.image_path) {
             const imgPath = path.join(__dirname, 'public', item.image_path);
@@ -219,14 +287,17 @@ app.delete('/api/items/:id', async (req, res) => {
     }
 });
 
+// ─── 404 Handler ──────────────────────────────────────────────────────────────
 app.use((req, res) => {
     res.status(404).json({ error: `Route ${req.method} ${req.path} not found.` });
 });
 
+// ─── Global Error Handler ─────────────────────────────────────────────────────
 app.use((err, req, res, next) => {
     console.error('[Global Error]', err.message);
     res.status(err.status || 500).json({ error: err.message || 'An unexpected error occurred.' });
 });
 
+// ─── Start Server ─────────────────────────────────────────────────────────────
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

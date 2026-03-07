@@ -483,3 +483,183 @@ button, .toggle-btn, .delete-btn, .resolve-btn {
     flex: 1;
     margin: 0;
 }
+
+/* ─── Role Selection Overlay ──────────────────────────────────────────────── */
+.role-overlay {
+    position: fixed;
+    inset: 0;
+    background: linear-gradient(135deg, #003366 0%, #005599 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+}
+
+.role-box {
+    background: white;
+    border-radius: 16px;
+    padding: 40px 36px;
+    width: 90%;
+    max-width: 480px;
+    text-align: center;
+    box-shadow: 0 16px 48px rgba(0,0,0,0.3);
+}
+
+.role-box h1 {
+    font-family: 'Montserrat', sans-serif;
+    color: #003366;
+    margin: 0 0 8px 0;
+    font-size: 1.6rem;
+}
+
+.role-box p {
+    color: #666;
+    margin: 0 0 28px 0;
+    font-size: 0.95rem;
+}
+
+.role-buttons {
+    display: flex;
+    gap: 16px;
+    flex-direction: column;
+}
+
+@media (min-width: 420px) {
+    .role-buttons { flex-direction: row; }
+}
+
+.role-btn {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 20px 16px;
+    border: 2px solid #ced4da;
+    border-radius: 12px;
+    background: #f8f9fa;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    width: auto;
+    margin: 0;
+}
+
+.role-btn:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+}
+
+.user-btn:hover  { border-color: #28a745; background: #f0fff4; }
+.admin-btn:hover { border-color: #003366; background: #f0f4ff; }
+
+.role-icon  { font-size: 2rem; }
+.role-label { font-weight: 700; font-size: 1rem; color: #003366; font-family: 'Montserrat', sans-serif; }
+.role-desc  { font-size: 0.78rem; color: #888; }
+
+/* ─── Header Admin Badge ──────────────────────────────────────────────────── */
+.header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+#admin-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.badge-admin {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+
+.logout-btn {
+    background: transparent;
+    border: 1px solid rgba(255,255,255,0.5);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.8rem;
+    width: auto;
+    margin: 0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.logout-btn:hover {
+    background: rgba(255,255,255,0.15);
+    transform: none;
+    box-shadow: none;
+}
+
+/* ─── No PIN Hint on Resolved Cards ──────────────────────────────────────── */
+.no-pin-hint {
+    font-size: 0.78rem;
+    color: #28a745;
+    font-style: italic;
+    display: block;
+    margin-bottom: 4px;
+}
+
+/* ─── Logo Styles ─────────────────────────────────────────────────────────── */
+.role-logo-row {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 12px;
+}
+
+.role-logo {
+    height: 90px;
+    width: auto;
+    object-fit: contain;
+}
+
+.header-logo {
+    height: 52px;
+    width: auto;
+    object-fit: contain;
+    filter: brightness(0) invert(1); /* Makes logo white to match header */
+}
+
+/* ─── User Badge ──────────────────────────────────────────────────────────── */
+.badge-user {
+    background: rgba(255,255,255,0.2);
+    border: 1px solid rgba(255,255,255,0.4);
+    color: white;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: bold;
+    letter-spacing: 0.3px;
+}
+
+#user-badge {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+/* ─── Admin Login Modal Centering Fix ────────────────────────────────────── */
+#admin-login-modal .modal-box input[type="password"] {
+    display: block;
+    margin: 0 auto 4px auto;
+    text-align: center;
+}
+
+#admin-login-modal .modal-box #admin-login-error {
+    display: block;
+    text-align: center;
+}
+
+#admin-login-modal .modal-box input[type="password"] {
+    text-align: left;
+}
