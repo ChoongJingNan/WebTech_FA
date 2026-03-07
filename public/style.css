@@ -1,16 +1,3 @@
-/* Screen reader only — visually hidden but accessible to assistive technologies */
-.sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0, 0, 0, 0);
-    white-space: nowrap;
-    border: 0;
-}
-
 body, html {
     margin: 0;
     padding: 0;
@@ -233,7 +220,7 @@ input[type="file"]:hover {
 
 .status-tag {
     font-weight: bold;
-    color: #0056b3;
+    color: #007bff;
 }
 
 #itemsContainer {
@@ -274,7 +261,7 @@ button, .toggle-btn, .delete-btn, .resolve-btn {
 }
 
 .resolve-btn {
-    background-color: #0056b3;
+    background-color: #007bff;
     color: white;
     border: none;
     padding: 8px 12px;
@@ -567,7 +554,7 @@ button, .toggle-btn, .delete-btn, .resolve-btn {
 
 .role-icon  { font-size: 2rem; }
 .role-label { font-weight: 700; font-size: 1rem; color: #003366; font-family: 'Montserrat', sans-serif; }
-.role-desc  { font-size: 0.78rem; color: #444; }
+.role-desc  { font-size: 0.78rem; color: #888; }
 
 /* ─── Header Admin Badge ──────────────────────────────────────────────────── */
 .header-inner {
@@ -673,12 +660,18 @@ button, .toggle-btn, .delete-btn, .resolve-btn {
     text-align: center;
 }
 
-/* Remove the white-invert filter since the new logo has a transparent background */
-.header-logo {
-    filter: none;
-}
-
-/* ─── Admin Login Input — left aligned, no placeholder ───────────────────── */
 #admin-login-modal .modal-box input[type="password"] {
     text-align: left;
+}
+
+.sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    white-space: nowrap;
+    border: 0;
 }
