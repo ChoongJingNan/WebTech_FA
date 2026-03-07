@@ -7,7 +7,7 @@ const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
 const cloudinary = require('cloudinary').v2;
-const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const streamifier = require('streamifier');
 
 // ─── Cloudinary Configuration ─────────────────────────────────────────────────
 cloudinary.config({
@@ -121,28 +121,34 @@ const validateReportFields = ({ reporter_name, title, description, category, loc
     return errors;
 };
 
-// ─── File Upload — Cloudinary Storage ────────────────────────────────────────
-// Images are stored on Cloudinary so they persist across Railway redeployments.
+// ─── File Upload — Multer Memory + Cloudinary Stream ─────────────────────────
+// Use memory storage so Railway's ephemeral filesystem is never written to.
+// Files are streamed directly from memory into Cloudinary on each upload.
 
 const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-const cloudinaryStorage = new CloudinaryStorage({
-    cloudinary,
-    params: {
-        folder: 'qiu-lost-found',
-        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
-        transformation: [{ width: 800, crop: 'limit' }],
-    },
-});
-
 const upload = multer({
-    storage: cloudinaryStorage,
+    storage: multer.memoryStorage(),
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (allowedMimeTypes.includes(file.mimetype)) cb(null, true);
         else cb(new Error('Only JPEG, PNG, GIF, or WEBP images are allowed.'));
     },
 });
+
+// Upload a buffer to Cloudinary and return the secure URL
+const uploadToCloudinary = (buffer) => {
+    return new Promise((resolve, reject) => {
+        const stream = cloudinary.uploader.upload_stream(
+            { folder: 'qiu-lost-found', transformation: [{ width: 800, crop: 'limit' }] },
+            (error, result) => {
+                if (error) reject(error);
+                else resolve(result.secure_url);
+            }
+        );
+        streamifier.createReadStream(buffer).pipe(stream);
+    });
+};
 
 // ─── Body Parsing & Static Files ─────────────────────────────────────────────
 
@@ -184,9 +190,13 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
 
         const errors = validateReportFields({ reporter_name, title, description, category, location, item_date, contact_info, verification_code });
         if (errors.length > 0) {
-            // Delete from Cloudinary if upload already happened before validation ran
-            if (req.file && req.file.filename) cloudinary.uploader.destroy(req.file.filename).catch(() => {});
             return res.status(400).json({ errors });
+        }
+
+        // Upload image buffer to Cloudinary if a file was attached
+        let image_path = null;
+        if (req.file) {
+            image_path = await uploadToCloudinary(req.file.buffer);
         }
 
         const clean = {
@@ -197,8 +207,7 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
             location:      sanitize(location),
             item_date,
             contact_info:  sanitize(contact_info),
-            // Store the full Cloudinary URL — persists across redeployments
-            image_path:    req.file ? req.file.path : null,
+            image_path,
             verification_code: crypto.createHash('sha256').update(verification_code.trim()).digest('hex'),
         };
 
@@ -211,7 +220,6 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
 
         res.status(201).json({ message: 'Report submitted successfully.' });
     } catch (err) {
-        if (req.file && req.file.filename) cloudinary.uploader.destroy(req.file.filename).catch(() => {});
         console.error('[POST /api/items]', err);
         res.status(500).json({ error: 'Database error. Please try again.' });
     }
