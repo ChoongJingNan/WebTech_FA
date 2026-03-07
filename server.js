@@ -1,11 +1,20 @@
+require('dotenv').config();
 const express = require('express');
 const db = require('./db');
 const path = require('path');
 const multer = require('multer');
-const fs = require('fs');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const crypto = require('crypto');
+const cloudinary = require('cloudinary').v2;
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+
+// ─── Cloudinary Configuration ─────────────────────────────────────────────────
+cloudinary.config({
+    cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+    api_key:    process.env.CLOUDINARY_API_KEY,
+    api_secret: process.env.CLOUDINARY_API_SECRET,
+});
 
 const app = express();
 
@@ -22,7 +31,7 @@ app.use(
                 defaultSrc: ["'self'"],
                 styleSrc:   ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
                 fontSrc:    ["'self'", "https://fonts.gstatic.com"],
-                imgSrc:     ["'self'", "data:"],
+                imgSrc:     ["'self'", "data:", "https://res.cloudinary.com"],
                 scriptSrc:  ["'self'"],
             },
         },
@@ -112,22 +121,22 @@ const validateReportFields = ({ reporter_name, title, description, category, loc
     return errors;
 };
 
-// ─── File Upload ──────────────────────────────────────────────────────────────
+// ─── File Upload — Cloudinary Storage ────────────────────────────────────────
+// Images are stored on Cloudinary so they persist across Railway redeployments.
 
-const uploadDir = path.join(__dirname, 'public', 'uploads');
-if (!fs.existsSync(uploadDir)) fs.mkdirSync(uploadDir, { recursive: true });
+const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 
-const storage = multer.diskStorage({
-    destination: (req, file, cb) => cb(null, 'public/uploads/'),
-    filename: (req, file, cb) => {
-        const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-        cb(null, uniqueSuffix + path.extname(file.originalname));
+const cloudinaryStorage = new CloudinaryStorage({
+    cloudinary,
+    params: {
+        folder: 'qiu-lost-found',
+        allowed_formats: ['jpg', 'jpeg', 'png', 'gif', 'webp'],
+        transformation: [{ width: 800, crop: 'limit' }],
     },
 });
 
-const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
 const upload = multer({
-    storage,
+    storage: cloudinaryStorage,
     limits: { fileSize: 5 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (allowedMimeTypes.includes(file.mimetype)) cb(null, true);
@@ -175,7 +184,8 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
 
         const errors = validateReportFields({ reporter_name, title, description, category, location, item_date, contact_info, verification_code });
         if (errors.length > 0) {
-            if (req.file) fs.unlink(req.file.path, () => {});
+            // Delete from Cloudinary if upload already happened before validation ran
+            if (req.file && req.file.filename) cloudinary.uploader.destroy(req.file.filename).catch(() => {});
             return res.status(400).json({ errors });
         }
 
@@ -187,8 +197,8 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
             location:      sanitize(location),
             item_date,
             contact_info:  sanitize(contact_info),
-            image_path:    req.file ? `/uploads/${req.file.filename}` : null,
-            // Hash the PIN — never store plain-text secrets in the database
+            // Store the full Cloudinary URL — persists across redeployments
+            image_path:    req.file ? req.file.path : null,
             verification_code: crypto.createHash('sha256').update(verification_code.trim()).digest('hex'),
         };
 
@@ -201,7 +211,7 @@ app.post('/api/items', submitLimiter, upload.single('item_image'), async (req, r
 
         res.status(201).json({ message: 'Report submitted successfully.' });
     } catch (err) {
-        if (req.file) fs.unlink(req.file.path, () => {});
+        if (req.file && req.file.filename) cloudinary.uploader.destroy(req.file.filename).catch(() => {});
         console.error('[POST /api/items]', err);
         res.status(500).json({ error: 'Database error. Please try again.' });
     }
@@ -277,9 +287,14 @@ app.delete('/api/items/:id', async (req, res) => {
                 return res.status(403).json({ error: 'Incorrect PIN. Only the original reporter can delete this report.' });
         }
 
+        // Delete image from Cloudinary if one exists
         if (item.image_path) {
-            const imgPath = path.join(__dirname, 'public', item.image_path);
-            fs.unlink(imgPath, () => {});
+            // Extract the public_id from the full Cloudinary URL
+            const parts = item.image_path.split('/');
+            const folder = parts[parts.length - 2];
+            const filename = parts[parts.length - 1].split('.')[0];
+            const publicId = `${folder}/${filename}`;
+            cloudinary.uploader.destroy(publicId).catch(() => {});
         }
 
         await db.query('DELETE FROM items WHERE id = ?', [id]);
