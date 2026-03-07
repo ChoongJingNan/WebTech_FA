@@ -9,6 +9,9 @@ const crypto = require('crypto');
 
 const app = express();
 
+// Trust Railway's reverse proxy so express-rate-limit correctly reads client IPs
+app.set('trust proxy', 1);
+
 // ─── Security Middleware ───────────────────────────────────────────────────────
 
 // Helmet: sets secure HTTP headers (XSS protection, content-type sniffing, etc.)
