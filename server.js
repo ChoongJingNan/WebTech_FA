@@ -41,7 +41,7 @@ app.use(
 // Rate Limiter: max 30 requests per 10 minutes per IP (prevents spam/abuse)
 const limiter = rateLimit({
     windowMs: 10 * 60 * 1000,
-    max: 30,
+    max: 200,
     message: { error: 'Too many requests. Please try again later.' },
     standardHeaders: true,
     legacyHeaders: false,
@@ -50,7 +50,7 @@ const limiter = rateLimit({
 // Stricter limiter on POST (submissions): max 10 reports per 10 minutes
 const submitLimiter = rateLimit({
     windowMs: 10 * 60 * 1000,
-    max: 10,
+    max: 50,
     message: { error: 'Too many submissions. Please wait before submitting again.' },
 });
 
